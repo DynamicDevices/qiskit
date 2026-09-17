@@ -3,6 +3,7 @@
 import json
 import subprocess
 import sys
+from html import escape
 from pathlib import Path
 
 import streamlit as st
@@ -29,10 +30,24 @@ st.markdown(
     .hero-rule { height: 3px; width: 74px; background: linear-gradient(90deg,#6DB33F,#E88A3C);
        border-radius: 3px; margin: 1.3rem 0 1.8rem; }
     .section-intro { color: #B9C8D4; max-width: 700px; }
-    .demo-card { min-height: 215px; border: 1px solid #3D5364; border-radius: 18px;
-       background: #12293C; padding: 1.5rem; margin-bottom: .7rem; }
-    .demo-card h3 { margin: .6rem 0 .7rem; font-size: 1.27rem; }
+    .demo-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+       grid-auto-rows: 1fr; gap: 1.25rem 2rem; }
+    .demo-tile { display: flex; flex-direction: column; min-width: 0; }
+    .demo-card { flex: 1; box-sizing: border-box; min-height: 285px;
+       border: 1px solid #3D5364; border-radius: 18px;
+       background: #12293C; padding: 1.5rem; }
+    .demo-card h3 { margin: 1rem 0 .8rem; min-height: 3.3rem; font-size: 1.27rem; }
     .demo-card p { color: #C5D0D9; line-height: 1.55; margin: 0; }
+    .demo-link { display: inline-flex; align-self: flex-start; align-items: center;
+       box-sizing: border-box; min-height: 2.75rem; margin-top: .75rem;
+       padding: .5rem .8rem; border: 1px solid #6DB33F; border-radius: 10px;
+       color: #F3F6F9 !important; text-decoration: none !important;
+       font-family: 'Space Grotesk', sans-serif; font-weight: 500; }
+    .demo-link:hover, .demo-link:focus-visible { background: #26472E;
+       color: #F3F6F9 !important; }
+    @media (max-width: 850px) { .demo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 600px) { .demo-grid { grid-template-columns: 1fr; grid-auto-rows: auto; }
+       .demo-card { min-height: 0; } .demo-card h3 { min-height: 0; } }
     .chip { display: inline-block; border-radius: 100px; padding: .28rem .62rem;
        color: #D9F1CB; background: #26472E; font: 600 .72rem 'Space Grotesk', sans-serif;
        letter-spacing: .06em; text-transform: uppercase; }
@@ -96,16 +111,15 @@ def landing() -> None:
         ("Noisy qubit rescue", "Add bit-flip errors and compare a three-qubit repetition code with one unprotected bit.", "repetition"),
         ("Sensor-network allocation", "Assign four devices to two channels using a small QAOA circuit and an exact comparison.", "allocation"),
     ]
-    for start in (0, 3):
-        cols = st.columns(3, gap="medium")
-        for col, (title, description, view) in zip(cols, cards[start:start + 3]):
-            with col:
-                st.markdown(
-                    f'<div class="demo-card"><span class="chip">Live now</span>'
-                    f'<h3>{title}</h3><p>{description}</p></div>',
-                    unsafe_allow_html=True,
-                )
-                st.button("Open experiment  →", key=f"open_{view}", on_click=go_to, args=(view,))
+    tiles = "".join(
+        f'<article class="demo-tile"><div class="demo-card">'
+        f'<span class="chip">Live now</span><h3>{escape(title)}</h3>'
+        f'<p>{escape(description)}</p></div>'
+        f'<a class="demo-link" href="?view={escape(view)}" '
+        f'aria-label="Open {escape(title)} experiment">Open experiment →</a></article>'
+        for title, description, view in cards
+    )
+    st.markdown(f'<div class="demo-grid">{tiles}</div>', unsafe_allow_html=True)
 
     st.markdown(
         '<div class="fine-print">Built by <strong>Dynamic Devices</strong> · '
