@@ -1,4 +1,4 @@
 qiskit>=2.5,<3
 qiskit-aer>=0.17,<1
-streamlit>=1.40,<2
+streamlit>=1.64,<2
 pyarrow<25

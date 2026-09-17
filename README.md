@@ -19,4 +19,6 @@ The app is deployed from the public `DynamicDevices/qiskit` GitHub repository wi
 
 The simulator runs on the app server. Measurement counts vary between runs. The BB84 page has a trial seed so visitors can compare interception levels using the same generated bases and bits.
 
+Each experiment includes a Mermaid flow diagram for the idea being demonstrated. The entanglement and teleportation pages also retain Qiskit's exact text circuit drawing. Mermaid runs in a Streamlit iframe using the official Mermaid CDN.
+
 The Dynamic Devices logo in `assets/dd-logo.svg` is the canonical original SVG from the DD marketing collateral brand library.

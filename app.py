@@ -5,6 +5,7 @@ import math
 import streamlit as st
 from qiskit import QuantumCircuit, transpile
 from qiskit_aer import AerSimulator
+from diagrams import BB84_DIAGRAM, entanglement_diagram, render_mermaid, teleportation_diagram
 from experiments import simulate_bb84, simulate_teleportation
 
 
@@ -133,6 +134,9 @@ def entanglement() -> None:
         )
         st.write("Counts:", {label: counts.get(label, 0) for label in labels})
 
+    st.subheader("Circuit map")
+    render_mermaid(entanglement_diagram(angle, entangle_qubits), height=260)
+    st.caption("Mermaid shows the gate flow. The Qiskit drawing below is the exact circuit used by the simulator.")
     with st.expander("Circuit and interpretation"):
         st.code(str(circuit.draw(output="text")), language="text")
         st.write(
@@ -182,6 +186,12 @@ def bb84() -> None:
     )
     st.write("First 16 transmissions")
     st.dataframe(result["rows"], hide_index=True, width="stretch")
+    st.subheader("One-qubit circuit flow")
+    render_mermaid(BB84_DIAGRAM, height=480)
+    st.caption(
+        "Mermaid summarizes preparation, optional interception, measurement and basis sifting. "
+        "Qiskit evaluates the one-qubit measurement probabilities; Python samples each transmission."
+    )
     st.info(
         "With an ideal channel, no interception gives a 0% error rate. Full "
         "intercept-and-resend gives about 25% on average; smaller trials vary. "
@@ -232,6 +242,9 @@ def teleportation() -> None:
         "The verification step undoes Alice's state preparation on Bob's "
         "qubit. A zero result means it matched the chosen state."
     )
+    st.subheader("Circuit map")
+    render_mermaid(teleportation_diagram(theta, phi), height=340)
+    st.caption("Mermaid shows the flow between Alice and Bob. The exact three-qubit Qiskit circuit is below.")
     with st.expander("Show the Qiskit circuit"):
         st.code(str(with_corrections["circuit"].draw(output="text", fold=80)), language="text")
     st.info(
