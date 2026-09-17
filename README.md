@@ -1,6 +1,6 @@
 # Qiskit | Dynamic Devices
 
-A DD-branded landing page for interactive Qiskit experiments. The first live demo explores two-qubit entanglement. It uses Qiskit Aer locally and needs no IBM account or API token.
+A DD-branded landing page for interactive Qiskit experiments. Three live demos cover entanglement, BB84 eavesdropping, and quantum teleportation. They run on local Qiskit simulators and need no IBM account or API token.
 
 Live app: https://qiskit.streamlit.app/
 
@@ -17,6 +17,6 @@ streamlit run app.py
 
 The app is deployed from the public `DynamicDevices/qiskit` GitHub repository with `app.py` as its entry point. Do not add IBM credentials: this demo does not use them.
 
-The simulator runs on the app server. Measurement counts vary between runs, while the underlying ideal probabilities are fixed for each angle.
+The simulator runs on the app server. Measurement counts vary between runs. The BB84 page has a trial seed so visitors can compare interception levels using the same generated bases and bits.
 
-The Dynamic Devices lockup in `assets/dd-lockup.svg` comes from the DD marketing collateral brand library.
+The Dynamic Devices logo in `assets/dd-logo.svg` is the canonical original SVG from the DD marketing collateral brand library.

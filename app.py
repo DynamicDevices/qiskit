@@ -5,6 +5,7 @@ import math
 import streamlit as st
 from qiskit import QuantumCircuit, transpile
 from qiskit_aer import AerSimulator
+from experiments import simulate_bb84, simulate_teleportation
 
 
 st.set_page_config(page_title="Qiskit | Dynamic Devices", page_icon="⚛️", layout="wide")
@@ -51,7 +52,7 @@ def go_to(view: str) -> None:
 
 
 def brand_header() -> None:
-    st.image("assets/dd-lockup.svg", width=300)
+    st.image("assets/dd-logo.svg", width=300)
 
 
 def landing() -> None:
@@ -76,20 +77,18 @@ def landing() -> None:
 
     cols = st.columns(3, gap="medium")
     cards = [
-        ("Live now", "Entanglement in two qubits", "Rotate a qubit, add an entangling gate, and see how the measurement pattern changes.", False),
-        ("Planned", "Alice, Bob and Eve", "Explore quantum key distribution and see how an eavesdropper changes the error rate.", True),
-        ("Planned", "Quantum teleportation", "Follow the transfer of a quantum state using entanglement and two classical bits.", True),
+        ("Entanglement in two qubits", "Rotate a qubit, add an entangling gate, and see how the measurement pattern changes.", "entanglement"),
+        ("Alice, Bob and Eve", "Explore quantum key distribution and see how an eavesdropper changes the error rate.", "bb84"),
+        ("Quantum teleportation", "Follow the transfer of a quantum state using entanglement and two classical bits.", "teleportation"),
     ]
-    for col, (status, title, description, planned) in zip(cols, cards):
+    for col, (title, description, view) in zip(cols, cards):
         with col:
-            chip_class = "chip soon" if planned else "chip"
             st.markdown(
-                f'<div class="demo-card"><span class="{chip_class}">{status}</span>'
+                f'<div class="demo-card"><span class="chip">Live now</span>'
                 f'<h3>{title}</h3><p>{description}</p></div>',
                 unsafe_allow_html=True,
             )
-            if not planned:
-                st.button("Open experiment  →", key="open_demo", on_click=go_to, args=("entanglement",))
+            st.button("Open experiment  →", key=f"open_{view}", on_click=go_to, args=(view,))
 
     st.markdown(
         '<div class="fine-print">Built by <strong>Dynamic Devices</strong> · '
@@ -154,7 +153,106 @@ def entanglement() -> None:
     )
 
 
-if st.query_params.get("view") == "entanglement":
+def bb84() -> None:
+    brand_header()
+    st.button("← All experiments", on_click=go_to, args=("home",))
+    st.markdown('<div class="eyebrow">Experiment 02 / quantum communication</div>', unsafe_allow_html=True)
+    st.title("Alice, Bob and Eve")
+    st.write(
+        "Alice prepares quantum bits in one of two bases. Bob measures each in a "
+        "random basis. They keep only rounds where their bases match. Eve can "
+        "intercept and resend some of the bits; her measurement can disturb them."
+    )
+
+    controls = st.columns(3, gap="medium")
+    with controls[0]:
+        rounds = st.select_slider("Bits sent", options=[64, 128, 256, 512, 1024], value=512)
+    with controls[1]:
+        intercept = st.slider("Eve intercepts (%)", 0, 100, 100, 25)
+    with controls[2]:
+        seed = st.number_input("Trial seed", min_value=0, max_value=999999, value=7, step=1)
+
+    result = simulate_bb84(rounds, intercept, seed)
+    metrics = st.columns(3)
+    metrics[0].metric("Bits intercepted", result["intercepted"])
+    metrics[1].metric("Bits kept after basis comparison", result["sifted"])
+    metrics[2].metric("Error rate in kept bits", f'{result["qber"]:.1%}')
+    st.bar_chart(
+        {"Scenario": ["No interception", "This run"],
+         "Error rate": [0.0, result["qber"]]},
+        x="Scenario", y="Error rate",
+    )
+    st.write("First 16 transmissions")
+    st.dataframe(result["rows"], hide_index=True, width="stretch")
+    st.info(
+        "With an ideal channel, no interception gives a 0% error rate. Full "
+        "intercept-and-resend gives about 25% on average; smaller trials vary. "
+        "The Z and X labels are measurement bases, not network channels."
+    )
+    st.caption(
+        "This is a Qiskit simulation of the BB84 idea. Real quantum key "
+        "distribution needs a quantum channel and an authenticated classical "
+        "channel; this page does not secure MQTT or any other traffic."
+    )
+    st.markdown(
+        "[IBM's quantum key distribution lesson]"
+        "(https://quantum.cloud.ibm.com/learning/en/modules/computer-science/quantum-key-distribution)"
+    )
+
+
+def teleportation() -> None:
+    brand_header()
+    st.button("← All experiments", on_click=go_to, args=("home",))
+    st.markdown('<div class="eyebrow">Experiment 03 / quantum communication</div>', unsafe_allow_html=True)
+    st.title("Quantum teleportation")
+    st.write(
+        "Choose a quantum state for Alice. An entangled pair and two ordinary "
+        "measurement bits let Bob reconstruct that state. Compare Bob's result "
+        "with and without the corrections those bits tell him to apply."
+    )
+
+    controls = st.columns(3, gap="medium")
+    with controls[0]:
+        theta = st.slider("State angle θ (degrees)", 0, 180, 60, 15)
+    with controls[1]:
+        phi = st.slider("Phase φ (degrees)", 0, 360, 45, 15)
+    with controls[2]:
+        shots = st.select_slider("Measurements", options=[100, 500, 1000, 2000], value=1000)
+
+    result = simulate_teleportation(theta, phi, shots, 7)
+    without = result["without_corrections"]
+    with_corrections = result["with_corrections"]
+    metrics = st.columns(2)
+    metrics[0].metric("Bob matches without corrections", f'{without["rate"]:.1%}')
+    metrics[1].metric("Bob matches with corrections", f'{with_corrections["rate"]:.1%}')
+    st.bar_chart(
+        {"Run": ["Without correction", "With correction"],
+         "Bob's match rate": [without["rate"], with_corrections["rate"]]},
+        x="Run", y="Bob's match rate",
+    )
+    st.write(
+        "The verification step undoes Alice's state preparation on Bob's "
+        "qubit. A zero result means it matched the chosen state."
+    )
+    with st.expander("Show the Qiskit circuit"):
+        st.code(str(with_corrections["circuit"].draw(output="text", fold=80)), language="text")
+    st.info(
+        "Quantum teleportation transfers a quantum state, not a person or "
+        "matter. Bob needs Alice's two classical bits, so this cannot send "
+        "information faster than light. These results use an ideal simulator."
+    )
+    st.markdown(
+        "[IBM's quantum teleportation lesson]"
+        "(https://quantum.cloud.ibm.com/learning/en/modules/computer-science/quantum-teleportation)"
+    )
+
+
+view = st.query_params.get("view")
+if view == "entanglement":
     entanglement()
+elif view == "bb84":
+    bb84()
+elif view == "teleportation":
+    teleportation()
 else:
     landing()
