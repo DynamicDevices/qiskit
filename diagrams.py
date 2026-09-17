@@ -68,25 +68,17 @@ def entanglement_diagram(angle: int, entangled: bool) -> str:
   class m0,m1 measure"""
 
 
-BB84_DIAGRAM = """flowchart LR
-  start["Initialize qubit at 0"] --> bit{"Alice bit is 1?"}
-  bit -->|yes| x["Apply X"]
-  bit -->|no| abasis{"Alice basis is X?"}
-  x --> abasis
-  abasis -->|yes| ah["Apply H"]
-  abasis -->|no| eve{"Eve intercepts?"}
-  ah --> eve
-  eve -->|yes| resend["Eve measures in Z or X, then resends"]
-  eve -->|no| bbasis{"Bob basis is X?"}
-  resend --> bbasis
-  bbasis -->|yes| bh["Apply H"]
-  bbasis -->|no| measure["Bob measures"]
-  bh --> measure
-  measure --> sift["Keep bits when Alice and Bob bases match"]
+BB84_DIAGRAM = """flowchart TB
+  start["Initialize qubit at 0"] --> encode["Alice: X if bit is 1; H if basis is X"]
+  encode --> eve{"Eve intercepts?"}
+  eve -->|yes| resend["Eve measures in Z or X, then prepares and resends"]
+  eve -->|no| bob["Bob: H if basis is X; then measure"]
+  resend --> bob
+  bob --> sift["Keep bits when Alice and Bob bases match"]
   classDef gate fill:#26472E,stroke:#6DB33F,color:#F3F6F9
   classDef measure fill:#3A2A1D,stroke:#E88A3C,color:#F3F6F9
-  class x,ah,bh gate
-  class resend,measure,sift measure"""
+  class encode,bob gate
+  class resend,sift measure"""
 
 
 def teleportation_diagram(theta: int, phi: int) -> str:

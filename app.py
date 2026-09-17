@@ -186,8 +186,8 @@ def bb84() -> None:
     )
     st.write("First 16 transmissions")
     st.dataframe(result["rows"], hide_index=True, width="stretch")
-    st.subheader("One-qubit circuit flow")
-    render_mermaid(BB84_DIAGRAM, height=480)
+    st.subheader("Circuit and protocol map")
+    render_mermaid(BB84_DIAGRAM, height=510)
     st.caption(
         "Mermaid summarizes preparation, optional interception, measurement and basis sifting. "
         "Qiskit evaluates the one-qubit measurement probabilities; Python samples each transmission."
