@@ -15,7 +15,7 @@ streamlit run app.py
 
 ## Publish
 
-The app is deployed from the public `ajlennon/qiskit` GitHub repository with `app.py` as its entry point. Do not add IBM credentials: this demo does not use them.
+The app is deployed from the public `DynamicDevices/qiskit` GitHub repository with `app.py` as its entry point. Do not add IBM credentials: this demo does not use them.
 
 The simulator runs on the app server. Measurement counts vary between runs, while the underlying ideal probabilities are fixed for each angle.
 

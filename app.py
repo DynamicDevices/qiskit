@@ -95,7 +95,7 @@ def landing() -> None:
         '<div class="fine-print">Built by <strong>Dynamic Devices</strong> · '
         'Connected intelligence, engineered.<br>'
         'These are educational simulations, not claims of quantum speed-up. '
-        '<a href="https://github.com/ajlennon/qiskit">View the source</a> · '
+        '<a href="https://github.com/DynamicDevices/qiskit">View the source</a> · '
         '<a href="https://www.dynamicdevices.co.uk/">Dynamic Devices</a></div>',
         unsafe_allow_html=True,
     )
