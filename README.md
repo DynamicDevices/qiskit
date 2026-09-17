@@ -17,6 +17,8 @@ streamlit run app.py
 
 The app is deployed from the public `DynamicDevices/qiskit` GitHub repository, using `app.py` on the `main` branch as its entry point. The demos currently use local simulators and need no IBM credentials.
 
+The Streamlit process runs each Qiskit calculation through `worker.py` in a fresh Python process. This keeps Qiskit's native circuit code isolated from Streamlit reruns on Community Cloud.
+
 The simulator runs on the app server. Measurement counts vary between runs. The BB84 page has a trial seed so visitors can compare interception levels using the same generated bases and bits.
 
 Each experiment includes a Mermaid flow diagram for the idea being demonstrated. The entanglement and teleportation pages also retain Qiskit's exact text circuit drawing. Mermaid runs in a Streamlit iframe using the official Mermaid CDN.

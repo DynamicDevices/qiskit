@@ -1,12 +1,12 @@
 """Dynamic Devices' shareable Qiskit experiments."""
 
-import math
+import json
+import subprocess
+import sys
+from pathlib import Path
 
 import streamlit as st
-from qiskit import QuantumCircuit, transpile
-from qiskit_aer import AerSimulator
 from diagrams import BB84_DIAGRAM, entanglement_diagram, render_mermaid, teleportation_diagram
-from experiments import simulate_bb84, simulate_teleportation
 
 
 st.set_page_config(page_title="Qiskit | Dynamic Devices", page_icon="⚛️", layout="wide")
@@ -54,6 +54,17 @@ def go_to(view: str) -> None:
 
 def brand_header() -> None:
     st.image("assets/dd-logo.svg", width=300)
+
+
+@st.cache_data(show_spinner=False)
+def run_simulation(view: str, **settings) -> dict:
+    """Keep Qiskit's native code outside Streamlit's long-lived script thread."""
+    request = json.dumps({"view": view, **settings})
+    completed = subprocess.run(
+        [sys.executable, str(Path(__file__).with_name("worker.py")), request],
+        capture_output=True, text=True, check=True, timeout=30,
+    )
+    return json.loads(completed.stdout)
 
 
 def landing() -> None:
@@ -115,15 +126,9 @@ def entanglement() -> None:
         entangle_qubits = st.toggle("Apply entangling CNOT gate", value=True)
         shots = st.select_slider("Measurements", options=[100, 500, 1000, 2000, 5000], value=1000)
 
-    circuit = QuantumCircuit(2, 2)
-    circuit.ry(math.radians(angle), 0)
-    if entangle_qubits:
-        circuit.cx(0, 1)
-    circuit.measure([0, 1], [0, 1])
-
-    simulator = AerSimulator()
-    counts = simulator.run(transpile(circuit, simulator), shots=shots).result().get_counts()
+    simulation = run_simulation("entanglement", angle=angle, entangle_qubits=entangle_qubits, shots=shots)
     labels = ["00", "01", "10", "11"]
+    counts = simulation["counts"]
     probabilities = [counts.get(label, 0) / shots for label in labels]
 
     with results:
@@ -138,7 +143,7 @@ def entanglement() -> None:
     render_mermaid(entanglement_diagram(angle, entangle_qubits), height=260)
     st.caption("Mermaid shows the gate flow. The Qiskit drawing below is the exact circuit used by the simulator.")
     with st.expander("Circuit and interpretation"):
-        st.code(str(circuit.draw(output="text")), language="text")
+        st.code(simulation["circuit"], language="text")
         st.write(
             "Qiskit displays bit 1 on the left and bit 0 on the right. At 90° with "
             "CNOT enabled, the ideal circuit produces 00 and 11 about half the time "
@@ -174,7 +179,7 @@ def bb84() -> None:
     with controls[2]:
         seed = st.number_input("Trial seed", min_value=0, max_value=999999, value=7, step=1)
 
-    result = simulate_bb84(rounds, intercept, seed)
+    result = run_simulation("bb84", rounds=rounds, intercept_percent=intercept, seed=int(seed))
     metrics = st.columns(3)
     metrics[0].metric("Bits intercepted", result["intercepted"])
     metrics[1].metric("Bits kept after basis comparison", result["sifted"])
@@ -227,7 +232,7 @@ def teleportation() -> None:
     with controls[2]:
         shots = st.select_slider("Measurements", options=[100, 500, 1000, 2000], value=1000)
 
-    result = simulate_teleportation(theta, phi, shots, 7)
+    result = run_simulation("teleportation", theta_degrees=theta, phi_degrees=phi, shots=shots, seed=7)
     without = result["without_corrections"]
     with_corrections = result["with_corrections"]
     metrics = st.columns(2)
@@ -246,7 +251,7 @@ def teleportation() -> None:
     render_mermaid(teleportation_diagram(theta, phi), height=340)
     st.caption("Mermaid shows the flow between Alice and Bob. The exact three-qubit Qiskit circuit is below.")
     with st.expander("Show the Qiskit circuit"):
-        st.code(str(with_corrections["circuit"].draw(output="text", fold=80)), language="text")
+        st.code(with_corrections["circuit"], language="text")
     st.info(
         "Quantum teleportation transfers a quantum state, not a person or "
         "matter. Bob needs Alice's two classical bits, so this cannot send "

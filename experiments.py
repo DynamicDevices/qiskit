@@ -4,9 +4,8 @@ import math
 import random
 from functools import lru_cache
 
-from qiskit import QuantumCircuit, transpile
+from qiskit import QuantumCircuit
 from qiskit.quantum_info import Statevector
-from qiskit_aer import AerSimulator
 
 
 @lru_cache(maxsize=8)
@@ -96,12 +95,43 @@ def teleportation_circuit(theta_degrees: int, phi_degrees: int, corrections: boo
 
 def simulate_teleportation(theta_degrees: int, phi_degrees: int, shots: int, seed: int) -> dict:
     """Compare Bob's state with and without the two classical corrections."""
-    simulator = AerSimulator()
+    theta = math.radians(theta_degrees)
+    phi = math.radians(phi_degrees)
+    preparation = QuantumCircuit(3)
+    preparation.ry(theta, 0)
+    preparation.rz(phi, 0)
+    preparation.h(1)
+    preparation.cx(1, 2)
+    preparation.cx(0, 1)
+    preparation.h(0)
+    amplitudes = Statevector.from_instruction(preparation).data
+    verification = QuantumCircuit(1)
+    verification.rz(-phi, 0)
+    verification.ry(-theta, 0)
+    rng = random.Random(seed)
     results = {}
     for corrections in (False, True):
         circuit = teleportation_circuit(theta_degrees, phi_degrees, corrections)
-        compiled = transpile(circuit, simulator)
-        counts = simulator.run(compiled, shots=shots, seed_simulator=seed).result().get_counts()
+        probabilities = {}
+        for alice_bit in (0, 1):
+            for pair_bit in (0, 1):
+                branch = [amplitudes[alice_bit + 2 * pair_bit + 4 * bob_bit] for bob_bit in (0, 1)]
+                branch_weight = sum(abs(value) ** 2 for value in branch)
+                if not branch_weight:
+                    continue
+                bob = [value / math.sqrt(branch_weight) for value in branch]
+                if corrections and pair_bit:
+                    bob.reverse()
+                if corrections and alice_bit:
+                    bob[1] = -bob[1]
+                checked = Statevector(bob).evolve(verification).probabilities()
+                for bob_bit in (0, 1):
+                    # Qiskit displays classical bits in the order c2 c1 c0.
+                    key = f"{bob_bit}{pair_bit}{alice_bit}"
+                    probabilities[key] = branch_weight * float(checked[bob_bit])
+        labels = list(probabilities)
+        samples = rng.choices(labels, weights=[probabilities[label] for label in labels], k=shots)
+        counts = {label: samples.count(label) for label in labels if label in samples}
         # With one classical register, count keys are c2 c1 c0. c2 is Bob's check bit.
         matches = sum(count for bits, count in counts.items() if bits[0] == "0")
         results["with_corrections" if corrections else "without_corrections"] = {
