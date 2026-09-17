@@ -1,6 +1,6 @@
 # Qiskit | Dynamic Devices
 
-A DD-branded landing page for interactive Qiskit experiments. Three live demos cover entanglement, BB84 eavesdropping, and quantum teleportation. They run on local Qiskit simulators and need no IBM account or API token.
+A DD-branded landing page for six interactive Qiskit experiments: entanglement, BB84 eavesdropping, quantum teleportation, Grover search, a three-qubit bit-flip repetition code, and four-device channel allocation with QAOA. They run on local Qiskit statevector simulations and need no IBM account or API token.
 
 Live app: https://qiskit.streamlit.app/
 
@@ -19,8 +19,8 @@ The app is deployed from the public `DynamicDevices/qiskit` GitHub repository, u
 
 The Streamlit process runs each Qiskit calculation through `worker.py` in a fresh Python process. This keeps Qiskit's native circuit code isolated from Streamlit reruns on Community Cloud.
 
-The simulator runs on the app server. Measurement counts vary between runs. The BB84 page has a trial seed so visitors can compare interception levels using the same generated bases and bits.
+The simulator runs on the app server. The demonstrations use fixed seeds so settings can be compared fairly. Grover search shows exact ideal probabilities. The repetition code injects independent bit flips and compares majority-vote recovery with one physical bit. Channel allocation shows QAOA probabilities alongside exhaustive classical results for all 16 assignments; it makes no performance claim.
 
-Each experiment includes a Mermaid flow diagram for the idea being demonstrated. The entanglement and teleportation pages also retain Qiskit's exact text circuit drawing. Mermaid runs in a Streamlit iframe using the official Mermaid CDN.
+Each experiment includes a Mermaid flow diagram for the idea being demonstrated. The circuit-based pages also show Qiskit's exact text circuit drawing. Mermaid runs in a Streamlit iframe using the official Mermaid CDN.
 
 The Dynamic Devices logo in `assets/dd-logo.svg` is the canonical original SVG from the DD marketing collateral brand library.

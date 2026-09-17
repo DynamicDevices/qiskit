@@ -9,6 +9,7 @@ from qiskit import QuantumCircuit
 from qiskit.quantum_info import Statevector
 
 from experiments import simulate_bb84, simulate_teleportation
+from more_experiments import grover_search, repetition_code, sensor_allocation
 
 
 def entanglement(angle: int, entangle_qubits: bool, shots: int) -> dict:
@@ -39,6 +40,12 @@ def main() -> None:
         result = simulate_teleportation(**request)
         for run in result.values():
             run["circuit"] = str(run["circuit"].draw(output="text", fold=80))
+    elif view == "grover":
+        result = grover_search(**request)
+    elif view == "repetition":
+        result = repetition_code(**request)
+    elif view == "allocation":
+        result = sensor_allocation(**request)
     else:
         raise ValueError(f"Unknown experiment: {view}")
     print(json.dumps(result))

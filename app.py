@@ -6,7 +6,10 @@ import sys
 from pathlib import Path
 
 import streamlit as st
-from diagrams import BB84_DIAGRAM, entanglement_diagram, render_mermaid, teleportation_diagram
+from diagrams import (
+    ALLOCATION_DIAGRAM, BB84_DIAGRAM, GROVER_DIAGRAM, REPETITION_DIAGRAM,
+    entanglement_diagram, render_mermaid, teleportation_diagram,
+)
 
 
 st.set_page_config(page_title="Qiskit | Dynamic Devices", page_icon="⚛️", layout="wide")
@@ -85,20 +88,24 @@ def landing() -> None:
         unsafe_allow_html=True,
     )
 
-    cols = st.columns(3, gap="medium")
     cards = [
         ("Entanglement in two qubits", "Rotate a qubit, add an entangling gate, and see how the measurement pattern changes.", "entanglement"),
         ("Alice, Bob and Eve", "Explore quantum key distribution and see how an eavesdropper changes the error rate.", "bb84"),
         ("Quantum teleportation", "Follow the transfer of a quantum state using entanglement and two classical bits.", "teleportation"),
+        ("Find the hidden device", "Use Grover search to amplify one marked result among four or eight devices.", "grover"),
+        ("Noisy qubit rescue", "Add bit-flip errors and compare a three-qubit repetition code with one unprotected bit.", "repetition"),
+        ("Sensor-network allocation", "Assign four devices to two channels using a small QAOA circuit and an exact comparison.", "allocation"),
     ]
-    for col, (title, description, view) in zip(cols, cards):
-        with col:
-            st.markdown(
-                f'<div class="demo-card"><span class="chip">Live now</span>'
-                f'<h3>{title}</h3><p>{description}</p></div>',
-                unsafe_allow_html=True,
-            )
-            st.button("Open experiment  →", key=f"open_{view}", on_click=go_to, args=(view,))
+    for start in (0, 3):
+        cols = st.columns(3, gap="medium")
+        for col, (title, description, view) in zip(cols, cards[start:start + 3]):
+            with col:
+                st.markdown(
+                    f'<div class="demo-card"><span class="chip">Live now</span>'
+                    f'<h3>{title}</h3><p>{description}</p></div>',
+                    unsafe_allow_html=True,
+                )
+                st.button("Open experiment  →", key=f"open_{view}", on_click=go_to, args=(view,))
 
     st.markdown(
         '<div class="fine-print">Built by <strong>Dynamic Devices</strong> · '
@@ -263,6 +270,132 @@ def teleportation() -> None:
     )
 
 
+def grover() -> None:
+    brand_header()
+    st.button("← All experiments", on_click=go_to, args=("home",))
+    st.markdown('<div class="eyebrow">Experiment 04 / search</div>', unsafe_allow_html=True)
+    st.title("Find the hidden device")
+    st.write(
+        "Mark one device and choose how many Grover rounds to run. The oracle changes "
+        "the marked state's phase; interference in the diffuser makes it more likely to be measured."
+    )
+    controls = st.columns(3)
+    with controls[0]:
+        items = st.selectbox("Candidate devices", [4, 8], index=1)
+    with controls[1]:
+        marked = st.selectbox("Marked device", list(range(items)), format_func=lambda value: f"Device {value}")
+    with controls[2]:
+        iterations = st.slider("Grover rounds", 0, 3, 1)
+    result = run_simulation("grover", items=items, marked=marked, iterations=iterations)
+    metrics = st.columns(2)
+    metrics[0].metric("Chance of marked device", f'{result["success"]:.1%}')
+    metrics[1].metric("Blind guess", f'{1 / items:.1%}')
+    labels = list(result["probabilities"])
+    st.bar_chart(
+        {"Device": [f"Device {int(label, 2)}" for label in labels],
+         "Measurement probability": list(result["probabilities"].values())},
+        x="Device", y="Measurement probability",
+    )
+    st.info("More rounds are not always better: after the peak, Grover's amplification overshoots.")
+    st.subheader("Circuit map")
+    render_mermaid(GROVER_DIAGRAM, height=280)
+    with st.expander("Show the Qiskit circuit"):
+        st.code(result["circuit"], language="text")
+    st.caption("This is an ideal small-circuit simulation, not a claim of a practical search speed-up.")
+    st.markdown("[IBM's Grover lesson](https://quantum.cloud.ibm.com/learning/en/modules/computer-science/grovers)")
+
+
+def repetition() -> None:
+    brand_header()
+    st.button("← All experiments", on_click=go_to, args=("home",))
+    st.markdown('<div class="eyebrow">Experiment 05 / error correction</div>', unsafe_allow_html=True)
+    st.title("Noisy qubit rescue")
+    st.write(
+        "Encode a 0 or 1 across three qubits. Each physical qubit can suffer an independent "
+        "bit flip. Majority vote recovers the value when at most one qubit flips."
+    )
+    controls = st.columns(3)
+    with controls[0]:
+        bit = st.selectbox("Logical bit", [0, 1], index=1)
+    with controls[1]:
+        error_percent = st.slider("Bit-flip chance per qubit (%)", 0, 50, 20, 5)
+    with controls[2]:
+        shots = st.select_slider("Trials", options=[100, 500, 1000, 2000, 5000], value=1000)
+    result = run_simulation("repetition", bit=bit, error_percent=error_percent, shots=shots, seed=7)
+    metrics = st.columns(2)
+    metrics[0].metric("Unprotected error rate", f'{result["direct_rate"]:.1%}')
+    metrics[1].metric("Three-qubit error rate", f'{result["coded_rate"]:.1%}')
+    st.bar_chart(
+        {"Method": ["One physical qubit", "Three-qubit code"],
+         "Error rate": [result["direct_rate"], result["coded_rate"]]},
+        x="Method", y="Error rate",
+    )
+    st.write(
+        f'In {shots:,} trials, the unprotected bit failed {result["direct_errors"]} times '
+        f'and the repetition code failed {result["coded_errors"]} times.'
+    )
+    st.subheader("Circuit map")
+    render_mermaid(REPETITION_DIAGRAM, height=260)
+    st.caption("The Qiskit circuit below shows an example with an X error on the middle qubit.")
+    with st.expander("Show the Qiskit circuit"):
+        st.code(result["circuit"], language="text")
+    st.info(
+        "This three-qubit repetition code corrects one bit flip. It does not protect "
+        "an arbitrary quantum state or correct phase errors; noise here is independent and simulated."
+    )
+    st.markdown("[IBM's repetition-code tutorial](https://quantum.cloud.ibm.com/docs/en/tutorials/repetition-codes)")
+
+
+def allocation() -> None:
+    brand_header()
+    st.button("← All experiments", on_click=go_to, args=("home",))
+    st.markdown('<div class="eyebrow">Experiment 06 / optimization</div>', unsafe_allow_html=True)
+    st.title("Sensor-network allocation")
+    st.write(
+        "Four devices share two channels. Connected devices interfere when assigned the "
+        "same channel. Tune a small QAOA circuit and compare its results with all 16 "
+        "possible assignments checked classically."
+    )
+    controls = st.columns(4)
+    with controls[0]:
+        topology = st.selectbox("Interference links", ["Ring", "Chain", "Star"])
+    with controls[1]:
+        gamma = st.slider("Cost angle γ", 0, 180, 45, 15)
+    with controls[2]:
+        beta = st.slider("Mixer angle β", 0, 90, 20, 5)
+    with controls[3]:
+        layers = st.selectbox("QAOA layers", [1, 2])
+    result = run_simulation(
+        "allocation", topology=topology, gamma_degrees=gamma, beta_degrees=beta, layers=layers
+    )
+    st.write("Links to separate:", ", ".join(f"{a}–{b}" for a, b in result["edges"]))
+    metrics = st.columns(3)
+    metrics[0].metric("QAOA average separated links", f'{result["expected_score"]:.2f}')
+    metrics[1].metric("Random average", f'{result["random_expected"]:.2f}')
+    metrics[2].metric("Exact classical optimum", result["best_score"])
+    st.write(f'Chance QAOA returns an optimum: {result["optimal_probability"]:.1%}')
+    labels = list(result["top_probabilities"])
+    st.bar_chart(
+        {"Allocation (D C B A)": labels,
+         "Measurement probability": list(result["top_probabilities"].values())},
+        x="Allocation (D C B A)", y="Measurement probability",
+    )
+    st.caption(
+        "Each four-bit allocation assigns A, B, C and D to channel 0 or 1; "
+        "Qiskit shows the bits in D C B A order. Classical optimum: "
+        + ", ".join(result["best_labels"]) + "."
+    )
+    st.subheader("Circuit and comparison map")
+    render_mermaid(ALLOCATION_DIAGRAM, height=300)
+    with st.expander("Show the Qiskit circuit"):
+        st.code(result["circuit"], language="text")
+    st.info(
+        "This is a four-device teaching example. The QAOA angles are user-selected, "
+        "not optimized, and exhaustive classical search gives the exact answer instantly."
+    )
+    st.markdown("[IBM's QAOA lesson](https://quantum.cloud.ibm.com/learning/en/courses/quantum-computing-in-practice/utility-scale-qaoa)")
+
+
 view = st.query_params.get("view")
 if view == "entanglement":
     entanglement()
@@ -270,5 +403,11 @@ elif view == "bb84":
     bb84()
 elif view == "teleportation":
     teleportation()
+elif view == "grover":
+    grover()
+elif view == "repetition":
+    repetition()
+elif view == "allocation":
+    allocation()
 else:
     landing()

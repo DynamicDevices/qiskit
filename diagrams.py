@@ -96,3 +96,41 @@ def teleportation_diagram(theta: int, phi: int) -> str:
   class state,pair,bob qubit
   class alice,correct gate
   class bits,verify measure"""
+
+
+GROVER_DIAGRAM = """flowchart LR
+  start["4 or 8 candidate devices"] --> h["Hadamards: equal superposition"]
+  h --> oracle["Oracle: phase-flip marked device"]
+  oracle --> diffuse["Diffuser: amplify its amplitude"]
+  diffuse -->|repeat chosen number of times| oracle
+  diffuse --> readout["Measure candidate"]
+  classDef gate fill:#26472E,stroke:#6DB33F,color:#F3F6F9
+  classDef measure fill:#3A2A1D,stroke:#E88A3C,color:#F3F6F9
+  class h,oracle,diffuse gate
+  class readout measure"""
+
+
+REPETITION_DIAGRAM = """flowchart LR
+  bit["Logical bit"] --> encode["Encode across q0, q1, q2"]
+  encode --> noise["Independent X errors"]
+  noise --> measure["Measure three bits"]
+  measure --> majority["Majority vote recovers one flipped bit"]
+  classDef gate fill:#26472E,stroke:#6DB33F,color:#F3F6F9
+  classDef measure fill:#3A2A1D,stroke:#E88A3C,color:#F3F6F9
+  class encode,majority gate
+  class noise,measure measure"""
+
+
+ALLOCATION_DIAGRAM = """flowchart LR
+  devices["Four devices; two channels"] --> edges["Links that interfere on one channel"]
+  edges --> h["Hadamards: try all allocations"]
+  h --> cost["QAOA cost: reward separated links"]
+  cost --> mixer["QAOA mixer: explore allocations"]
+  mixer --> readout["Measure allocation probabilities"]
+  edges --> exact["Classically enumerate all 16 allocations"]
+  readout --> compare["Compare with exact optimum"]
+  exact --> compare
+  classDef gate fill:#26472E,stroke:#6DB33F,color:#F3F6F9
+  classDef measure fill:#3A2A1D,stroke:#E88A3C,color:#F3F6F9
+  class h,cost,mixer gate
+  class readout,compare measure"""
