@@ -2,7 +2,7 @@
 
 A DD-branded landing page for interactive Qiskit experiments. Three live demos cover entanglement, BB84 eavesdropping, and quantum teleportation. They run on local Qiskit simulators and need no IBM account or API token.
 
-Live app: https://qiskit.streamlit.app/
+Live app: https://qiskit-demos-dd.streamlit.app/
 
 ## Run locally
 
