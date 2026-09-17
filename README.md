@@ -15,7 +15,7 @@ streamlit run app.py
 
 ## Publish
 
-The app is deployed from the public `DynamicDevices/qiskit` GitHub repository. The short URL uses `demos.py` as its entry point, which runs `app.py` on each Streamlit rerun. Do not add IBM credentials: these demos currently use local simulators.
+The app is deployed from the public `DynamicDevices/qiskit` GitHub repository, using `app.py` on the `main` branch as its entry point. The demos currently use local simulators and need no IBM credentials.
 
 The simulator runs on the app server. Measurement counts vary between runs. The BB84 page has a trial seed so visitors can compare interception levels using the same generated bases and bits.
 
