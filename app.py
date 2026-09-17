@@ -65,8 +65,6 @@ def landing() -> None:
         'see the result, and explore what today’s machines can—and cannot—do.</p>',
         unsafe_allow_html=True,
     )
-    st.button("Explore the live experiment  →", type="primary", on_click=go_to, args=("entanglement",))
-    st.write("")
     st.write("")
     st.subheader("Explore the experiments")
     st.markdown(
