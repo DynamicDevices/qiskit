@@ -2,7 +2,7 @@
 
 A DD-branded landing page for interactive Qiskit experiments. The first live demo explores two-qubit entanglement. It uses Qiskit Aer locally and needs no IBM account or API token.
 
-Live app: https://qiskit-entanglement-demo.streamlit.app/
+Live app: https://qiskit.streamlit.app/
 
 ## Run locally
 
